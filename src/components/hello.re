@@ -1,14 +1,10 @@
 open GraphqlTypes;
 
-[%bs.raw {|require('./app.css')|}];
-
-[@bs.module] external logo : string = "./logo.svg";
-
 [@bs.module] external gql : gql = "graphql-tag";
 
 type episode = {. "id": string, "title": string};
 
-type result = {. "allEpisodes": array(episode)};
+type result = {. "episode": episode};
 
 let httpLinkOptions: ApolloClient.linkOptions = {
   "uri": "https://api.graph.cool/simple/v1/PHRESHR"
@@ -22,33 +18,36 @@ let apolloClientOptions: ApolloClient.clientOptions = {
 let client = ApolloClient.apolloClient(apolloClientOptions);
 
 let query =
-  [@bs] gql({|
-  query allEpisodes {
-    allEpisodes {
+  [@bs]
+  gql(
+    {|
+  query episode {
+    episode: Episode (id: "cixm6eovajibk0180k40rcoja") {
       id
       title
     }
   }
- |});
+ |}
+  );
 
 type action =
   | Result(result)
   | Error(string);
 
 type state = {
-  result: array(episode),
+  result: episode,
   error: string
 };
 
-let component = ReasonReact.reducerComponent("App");
+let component = ReasonReact.reducerComponent("Hello");
 
 let make = (~message, _children) => {
   ...component,
-  initialState: () => {result: [||], error: ""},
+  initialState: () => {result: Js.Obj.empty(), error: ""},
   reducer: (action, state) =>
     switch action {
     /* TODO enhance result */
-    | Result(data) => ReasonReact.Update({...state, result: data##allEpisodes})
+    | Result(data) => ReasonReact.Update({...state, result: data##episode})
     | Error(error) => ReasonReact.Update({...state, error})
     },
   didMount: ({reduce}) => {
@@ -67,16 +66,11 @@ let make = (~message, _children) => {
     ReasonReact.NoUpdate
   },
   render: ({state}) => {
-    let episodes =
-      Array.map((episode) => <Episode key=episode##id title=episode##title />, state.result);
-    <div className="App">
-      <div className="App-header">
-        <img src=logo className="App-logo" alt="logo" />
-        <h2> (ReasonReact.stringToElement(message)) </h2>
-      </div>
-      <h2> (ReasonReact.stringToElement("Episodes!")) </h2>
-      (ReasonReact.arrayToElement(episodes))
-      <Hello message="Hello" />
+    let episode = state.result;
+    <div>
+      <div> (ReasonReact.stringToElement(message)) </div>
+      <h2> (ReasonReact.stringToElement("Episode!")) </h2>
+      <Episode key=episode##id title=episode##title />
     </div>
   }
 };
